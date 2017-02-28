@@ -1,0 +1,5 @@
+['MoveBy.py']
+navdata: logs/navdata_160923_151540.bin
+cmd: logs/cmd_160923_151540.bin
+console: logs/console_160923_151540.txt
+now: datetime.datetime(2016, 9, 23, 15, 15, 40, 22157)
