@@ -26,12 +26,20 @@ Docs:
 
 ## Usage
 
+- Download project
+In case of Linux or Mac, open terminal
+- $ cd Downloads/
+- python file_name.py
+In case of Windows
+- Open file from the python software used
+
+For new code: Open Python interactive mode
 ```console
 python
 Python 2.7 (#1, Feb 28 2010, 00:02:06)
 Type "help", "copyright", "credits" or "license" for more information.
 >>>
-```
+``` 
 
 
 ## Communication
