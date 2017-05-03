@@ -26,11 +26,13 @@ Docs:
 
 ## Usage
 
-- Download project
 In case of Linux or Mac, open terminal
+- Download project
 - $ cd Downloads/
 - python file_name.py
+
 In case of Windows
+- Download project
 - Open file from the python software used
 
 For new code: Open Python interactive mode
