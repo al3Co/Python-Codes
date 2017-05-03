@@ -36,9 +36,10 @@ In case of Windows
 For new code: Open Python interactive mode
 ```console
 python
-Python 2.7 (#1, Feb 28 2010, 00:02:06)
+Python 2.7.10 (default, Feb  6 2017, 23:53:20) 
+[GCC 4.2.1 Compatible Apple LLVM 8.0.0 (clang-800.0.34)] on darwin
 Type "help", "copyright", "credits" or "license" for more information.
->>>
+>>> 
 ``` 
 
 
