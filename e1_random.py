@@ -1,5 +1,5 @@
-#random
-#vectors (items)
+# random
+# vectors (items)
 
 import random
 
@@ -21,7 +21,7 @@ def randomNumber():
     print random.choice('abcdefghij')   # Choose a random element
     items = [1, 2, 3, 4, 5, 6, 7]
     random.shuffle(items)
-    print items
+    print items                         #Shuffle elements in vector called items
     print random.sample([1, 2, 3, 4, 5],  3)    # Choose 3 elements
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ def raquel3():      #Imprimir promedio de 4 materias diferentes
 
 def raquel3():      #Promedio de 4 materias de 2 Alumnos
 
-def raquel4():      #Promedio de X alumnos y Y materias
+def raquel4():      #Promedio de X alumnos y Y materia, verificando errores de escritura
 
 if __name__ == "__main__":
     raquel1()
