@@ -1,7 +1,8 @@
 # random
-# vectors (items)
+# array (Vector - items)
 
 import random
+import array
 
 def randomExcuse():
     excuses = [
@@ -12,6 +13,7 @@ def randomExcuse():
                'HangOver'
                ]
     print 'I am ' + random.choice(excuses)
+    print 'Number of excuses: ' + str(len(excuses)) # str = String (len = Length (excuses = array))
 
 def randomNumber():
     print random.random()               # Random float x, 0.0 <= x < 1.0
@@ -25,4 +27,4 @@ def randomNumber():
     print random.sample([1, 2, 3, 4, 5],  3)    # Choose 3 elements
 
 if __name__ == "__main__":
-    randomNumber()
+    randomExcuse()
