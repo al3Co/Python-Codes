@@ -1,14 +1,14 @@
 # aritmetics
-# tuplas - listas / array - vectors
+# tuplas - listas / array - vectors (Do matter the position)
 
 def aritmetics():
-    a = 10 + 5  # suma
-    a = 12 - 7  # resta
-    a = -5      # negacion
-    a = 7 * 5   # multiplic
-    a = 2 ** 3  # exponente
-    a = 12.5 / 2    # Div. (flotantes)
-    a = 27 % 4  # modulo
+    a = 10 + 5  # sum
+    a = 12 - 7  # substract
+    a = -5      # negation
+    a = 7 * 5   # times
+    a = 2 ** 3  # exponent
+    a = 12.5 / 2    # Division. (floats)
+    a = 27 % 4  # modul
 
 def tuplasListas():
     print   # Generar un espacio en la consola
