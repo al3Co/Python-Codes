@@ -27,4 +27,4 @@ def randomNumber():
     print random.sample([1, 2, 3, 4, 5],  3)    # Choose 3 elements
 
 if __name__ == "__main__":
-    randomExcuse()
+    randomNumber()
