@@ -44,7 +44,7 @@ def tuplasListas():
     if numero in mi_lista: mi_lista.append('Si existe')
     print mi_lista
 
-    mi_lista[:] = []
+    mi_lista[:] = []        # Eliminar lista
     print (mi_lista)
     print len(mi_lista)
 
