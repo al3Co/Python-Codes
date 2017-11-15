@@ -27,9 +27,10 @@ Docs:
 ## Usage
 
 In case of Linux or Mac, open terminal
-- Download project
 - $ cd Downloads/
-- python file_name.py
+- $ git clone https://github.com/al3Co/Python-Codes.git
+- $ cd Python-Codes/
+- python turnOffComputer.py 
 
 In case of Windows
 - Download project
