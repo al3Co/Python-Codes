@@ -6,7 +6,7 @@
 <a href="#communication">Communication</a>
 </p>
 
-# Python Codes
+# Sizing residential PV battery systems
 <br />
 Python code for sizing PV battery systems.
 
