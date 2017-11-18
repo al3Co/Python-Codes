@@ -34,19 +34,17 @@ matplotlib:
 
 ## Usage
 
-Installation
-Open terminal:
+Installation. In case of Linux or Mac, open terminal:
 - $ sudo easy_install pip
 - $ sudo pip install xlrd
 - $ python -mpip install -U pip
 - $ python -mpip install -U matplotlib
 
 Download
-In case of Linux or Mac, open terminal
 - $ cd Downloads/
 - $ git clone https://github.com/al3Co/Python-Codes.git
-- $ cd Python-Codes/
-- python turnOffComputer.py
+- $ cd Sizing\ residential\ PV\ battery\ systems/
+- $ python NameOfFile.py
 
 
 
