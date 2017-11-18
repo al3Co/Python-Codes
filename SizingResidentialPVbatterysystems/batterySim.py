@@ -9,7 +9,7 @@ file = time.strftime("%Y%m%d-%H%M%S")
 # function to read excel data
 def readExcelData():
     a, b = False, False
-    wb = open_workbook('Simulation_model-1.xlsx')
+    wb = open_workbook('Simulation_Example.xlsx')
     for s in wb.sheets():
         consumption, PVgeneration = [], []
         for col in range(s.ncols):
