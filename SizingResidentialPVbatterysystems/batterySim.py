@@ -135,10 +135,13 @@ def plotData(Consumption, PVGeneration, Edu, Ebc, batteryCurrentStorage, GridCon
 
 # main
 if __name__ == "__main__":
-	# function to read excel data
-	consumption, PVgeneration = readExcelData()
-	# main function
-	mainCode(consumption, PVgeneration)
+	try :
+		# function to read excel data
+		consumption, PVgeneration = readExcelData()
+		# main function
+		mainCode(consumption, PVgeneration)
+	except Exception, e:
+		print "Oops!  Something is wrong, check the name of the files or input file"
 	
 	
 
