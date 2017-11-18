@@ -53,4 +53,5 @@ Download
 - If you found a bug, please open an issue
 - Also, if you have a feature request, please open an issue
 - If you want to contribute, submit a pull request
+- raquel.vasquezt@gmail.com
 
