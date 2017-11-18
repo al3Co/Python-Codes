@@ -44,7 +44,7 @@ Download
 - $ cd Downloads/
 - $ git clone https://github.com/al3Co/Python-Codes.git
 - $ cd Sizing\ residential\ PV\ battery\ systems/
-- $ python NameOfFile.py
+- $ python batterySim.py
 
 
 
