@@ -140,6 +140,7 @@ if __name__ == "__main__":
 		consumption, PVgeneration = readExcelData()
 		# main function
 		mainCode(consumption, PVgeneration)
+		print "Output files: Data:", file, " Image: ", str(file + ".png")
 	except Exception, e:
 		print "Oops!  Something is wrong, check the name of the files or input file"
 	
