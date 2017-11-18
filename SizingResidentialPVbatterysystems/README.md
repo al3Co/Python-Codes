@@ -18,6 +18,8 @@ Python code for sizing PV battery systems.
 - Grid Consumption
 - Ebd Energy Battery Discharge
 - Self-consumption rate
+- Plot final data
+- Creates file with final data
 
 ## Requirements
 - Python 2.7+
@@ -26,10 +28,8 @@ Python code for sizing PV battery systems.
 
 ## Documentation
 
-Docs:
-[https://docs.python.org/2.7/](url)
-matplotlib:
-[https://matplotlib.org/users/installing.html](url)
+- Docs: [https://docs.python.org/2.7/](url)
+- matplotlib: [https://matplotlib.org/users/installing.html](url)
 
 
 ## Usage
@@ -43,15 +43,16 @@ Installation. In case of Linux or Mac, open terminal:
 Download
 - $ cd Downloads/
 - $ git clone https://github.com/al3Co/Python-Codes.git
+
+Run
 - $ cd Sizing\ residential\ PV\ battery\ systems/
 - $ python batterySim.py
 
 
-
-
 ## Communication
+
 - If you found a bug, please open an issue
 - Also, if you have a feature request, please open an issue
 - If you want to contribute, submit a pull request
-- raquel.vasquezt@gmail.com
+- Contact: raquel.vasquezt@gmail.com
 
