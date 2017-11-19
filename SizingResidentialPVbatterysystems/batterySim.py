@@ -9,7 +9,7 @@ file = time.strftime("%Y%m%d-%H%M%S")
 # function to read excel data
 def readExcelData():
     a, b = False, False
-    wb = open_workbook('Simulation_Example.xlsx')
+    wb = open_workbook('Model1.xlsx')
     for s in wb.sheets():
         consumption, PVgeneration = [], []
         for col in range(s.ncols):
@@ -35,35 +35,47 @@ def readExcelData():
 
 # main function
 def mainCode(consumption, PVgeneration):
-	# declared battery as 0% of charge and 10000 (kW) of storage
-	batteryCurrentStorage, batterySize, previousCharge, number = [], 10000, 0, 0
+	# declare battery as 0% of charge and 10000 (kW) of storage
+	batteryCurrentStorage, batterySize, previousCharge, number = [], 10000, 10000, 0
+	# declare time interval conversion factor from kW to kWh of 0.25 (15 min interval) 
+	timeInterval = 0.25
 	# declare vectors
 	Consumption, PVGeneration, Edu, Ebc, Ebd, GridConsumption, selfConsRate = [], [], [], [], [], [], []
+	degreeSs, gridFeed_In = [], []
 	# Prepare file to save data
 	f = open(file,'a')
-	f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("batteryCurrentStorage")+'\t'+("GridConsumption")+'\t'+("Ebd")+'\t'+("self-Consumption Rate")+'\n')
+	f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("BatteryCurrentStorage")+'\t'+("Grid Consumption")+'\t'+("Ebd")+'\t'+("Self-Consumption Rate")+'\t'+("Degree of Self-Sufficiency")+'\t'+("Grid Feed-In")+'\n')
 	f.close()
 	# verify length of data vector
 	if len(consumption) == len(PVgeneration):
 		# for each data
 		for a in range(0, len(consumption)):
 			# function to calculate the Energy Directly Used from PVgeneration (Edu)
-			Edu = energyDirCons(consumption[a], PVgeneration[a], Edu)
+			Edu = energyDirCons(consumption[a], PVgeneration[a], Edu, timeInterval)
 			# function to calculate the Energy Used for charging the battery (Ebc)
-			Ebc = energyChargingBattery(consumption[a], PVgeneration[a], Ebc)
+			Ebc = energyChargingBattery(consumption[a], PVgeneration[a], Ebc, timeInterval)
 			# function to calculate the Energy Discharge from the Battery (Ebd)
-			previousCharge = energyBatteryDischarge(consumption[a], PVgeneration[a], Ebd, GridConsumption, batteryCurrentStorage, batterySize, previousCharge)
+			previousCharge = energyBatteryDischarge(consumption[a], PVgeneration[a], Ebd, GridConsumption, batteryCurrentStorage, batterySize, previousCharge, timeInterval, gridFeed_In)
 			# function to calculate the self-Consumption Rate
 			selfConsumptionRate(Edu[a], Ebc[a], PVgeneration[a], selfConsRate)
+			# function to calculate degree of self-sufficiency (d)
+			degreeSelfSuff(Edu[a], Ebd[a], consumption[a], degreeSs)
 			# save in vetor to plot
 			Consumption.append(consumption[a])
 			PVGeneration.append(PVgeneration[a])
 			# save data on file
 			f = open(file,'a')
-			f.write(str(a + 1)+'\t'+str(consumption[a])+'\t'+str(PVgeneration[a])+'\t'+ str(Edu[a])+'\t'+str(Ebc[a])+'\t'+str(batteryCurrentStorage[a])+'\t'+str(GridConsumption[a])+'\t'+str(Ebd[a])+'\t'+str(selfConsRate[a])+'\n')
+			f.write(str(a + 1)+'\t'+str(consumption[a])+'\t'+str(PVgeneration[a])+'\t'+ str(Edu[a])+'\t'+str(Ebc[a])+'\t'+str(batteryCurrentStorage[a])+'\t'+str(GridConsumption[a])+'\t'+str(Ebd[a])+'\t'+str(selfConsRate[a])+'\t'+str(degreeSs[a])+'\t'+str(gridFeed_In[a])+'\n')
 			f.close()
 		# plot data
-		plotData(Consumption, PVGeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd)
+		plotData(Consumption, PVGeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, selfConsRate, degreeSs, gridFeed_In)
+
+def degreeSelfSuff(Edu, Ebd, consumption, degreeSs):
+	try:
+		d = (Edu + Ebd) / Consumption
+	except:
+		d = 0
+	degreeSs.append(d)
 
 def selfConsumptionRate(Edu, Ebc, PVgeneration, selfConsRate):
 	try:
@@ -72,8 +84,8 @@ def selfConsumptionRate(Edu, Ebc, PVgeneration, selfConsRate):
 		s = 0
 	selfConsRate.append(s)
 
-def energyBatteryDischarge(consumption, PVgeneration, Ebd, GridConsumption, batteryCurrentStorage, batterySize, previousCharge):
-	EbdTemp = 0
+def energyBatteryDischarge(consumption, PVgeneration, Ebd, GridConsumption, batteryCurrentStorage, batterySize, previousCharge, timeInterval, gridFeed_In):
+	EbdTemp, gridFeedIn = 0, 0
 	# battery Current Storage
 	batteryCurrentStorageTemp = (PVgeneration + previousCharge) - consumption
 	if batteryCurrentStorageTemp < 0:
@@ -88,43 +100,55 @@ def energyBatteryDischarge(consumption, PVgeneration, Ebd, GridConsumption, batt
 		GridConsumptionTemp = 0
 	GridConsumption.append(GridConsumptionTemp)
 
-	#Energy Battery Discharge
-	if (previousCharge > 0 ):
-		EbdTemp = (consumption - (PVgeneration + previousCharge))
+	# Energy Battery Discharge
+	if (consumption > PVgeneration):
+		EbdTemp = ((batteryCurrentStorageTemp - consumption) * timeInterval)
+	# if (previousCharge > 0 ):
+		# EbdTemp = ((consumption - (PVgeneration + previousCharge)) * timeInterval)
 	elif (previousCharge < 0 ):
 		EbdTemp = 0
 	if EbdTemp < 0:
 		EbdTemp = 0
 	Ebd.append(EbdTemp)
+
+	# Grid Feed-in
+	if (batteryCurrentStorageTemp >= batterySize):
+		gridFeedIn = PVgeneration - batterySize
+	if (gridFeedIn <= 0):
+		gridFeedIn = 0
+	gridFeed_In.append(gridFeedIn)
 	
-	# previous charge
+	# previous charge (keep at the end of this function)
 	previousCharge = batteryCurrentStorageTemp
 	return previousCharge
 	
-def energyChargingBattery(consumption, PVgeneration, Ebc):
+def energyChargingBattery(consumption, PVgeneration, Ebc, timeInterval):
 	if PVgeneration == 0 or PVgeneration < consumption:
 		Ebc.append(0)
 	elif PVgeneration > consumption:
-		Ebc.append(PVgeneration - consumption)
+		Ebc.append((PVgeneration - consumption) * timeInterval)
 	return Ebc
 
-def energyDirCons(consumption, PVgeneration, Edu):
+def energyDirCons(consumption, PVgeneration, Edu, timeInterval):
 	if PVgeneration < consumption:
-		Edu.append(PVgeneration)
+		Edu.append(PVgeneration * timeInterval)
 	elif PVgeneration >= consumption:
-		Edu.append(consumption)
+		Edu.append(consumption * timeInterval)
 	return Edu
 
 # function to plot data
-def plotData(Consumption, PVGeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd):
+def plotData(Consumption, PVGeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, selfConsRate, degreeSs, gridFeed_In):
 	plt.plot(Consumption,'b', label="Consumption", linewidth=2)
-	plt.plot(PVGeneration,'g', label="PVgeneration", linewidth=2)
+	plt.plot(PVGeneration,'g', label="PV Generation", linewidth=2)
 	plt.plot(Edu,'r', label="Energy directly used", linewidth=2)
-	plt.plot(Ebc,'c', label="Energy Used for charging Battery", linewidth=2)
+	#plt.plot(Ebc,'c', label="Energy Used for charging Battery", linewidth=2)
 	plt.plot(batteryCurrentStorage,'m', label="battery Current Storage", linewidth=2)
-	plt.plot(GridConsumption,'y', label="Grid Consumption", linewidth=2)
+	plt.plot(GridConsumption,'y', label="Grid Supply", linewidth=2)
 	plt.plot(Ebd,'k', label="Energy Battery Discharge", linewidth=2)
-	plt.legend(loc=0, fontsize="x-small", ncol=3)
+	#plt.plot(selfConsRate, 'g', label="Self-Consumption Rate", linewidth=2)
+	#plt.plot(degreeSs, 'b', label="Degree of Self-Sufficiency", linewidth=2)
+	plt.plot(gridFeed_In, 'c', label="Grid Feed-In", linewidth=2)
+	plt.legend(loc=9, fontsize="x-small", ncol=3)
 	plt.xlabel("Time")
 	plt.ylabel("KWh")
 	plt.title("Grid/Battery Consumption")
@@ -145,6 +169,4 @@ if __name__ == "__main__":
 		print "Oops!  Something is wrong, check the name of the files or input file"
 	
 	
-
-
 
