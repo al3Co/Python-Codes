@@ -20,6 +20,8 @@ Python code for sizing PV battery systems.
 - Self-consumption rate
 - Plot final data
 - Creates file with final data
+- Grid feed-in
+- Degree of self-sufficiency (d)
 
 ## Requirements
 - Python 2.7+
