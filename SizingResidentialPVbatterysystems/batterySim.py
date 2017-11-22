@@ -10,6 +10,8 @@ file = time.strftime("%Y%m%d-%H%M%S")
 
 # declare time interval conversion factor from kW to kWh of 0.0833 (5 min interval) 
 timeInterval = Fraction(5, 60)
+electCost = 0.2670
+electPrice = 0.1114
 
 # function to read excel data
 def readExcelData():
@@ -42,10 +44,10 @@ def mainCode(consumption, PVgeneration):
 	batteryCurrentStorage, batterySize, previousCharge, number = [], 1.2, 0.0, 0
 	# declare vectors
 	Consumption, PVGeneration, Edu, Ebc, Ebd, GridConsumption, selfConsRate = [], [], [], [], [], [], []
-	degreeSs, gridFeed_In = [], []
+	degreeSs, gridFeed_In, electCostBuy, electPriceSell = [], [], [], []
 	# Prepare file to save data
 	f = open(file,'a')
-	f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("BatteryCurrentStorage")+'\t'+("Grid Consumption")+'\t'+("Ebd")+'\t'+("Self-Consumption Rate")+'\t'+("Degree of Self-Sufficiency")+'\t'+("Grid Feed-In")+'\n')
+	f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("BatteryCurrentStorage")+'\t'+("Grid Consumption")+'\t'+("Ebd")+'\t'+("Self-Consumption Rate")+'\t'+("Degree of Self-Sufficiency")+'\t'+("Grid Feed-In")+'\t'+("Electricity Cost/Buy[Euro]")+'\t'+("Electricity Profit/Sell[Euro]")+'\n')
 	f.close()
 	# verify length of data vector
 	if len(consumption) == len(PVgeneration):
@@ -60,9 +62,11 @@ def mainCode(consumption, PVgeneration):
 			previousCharge = energyBatteryDischarge(consumption[a], PVgeneration[a], Ebd, GridConsumption[a], previousCharge, timeInterval, gridFeed_In[a], Edu[a])
 			selfConsumptionRate(Edu[a], Ebc[a], PVgeneration[a], selfConsRate)
 			degreeSelfSuff(Edu[a], Ebd[a], consumption[a], degreeSs)
+			electricityCost(GridConsumption[a], electCost, electCostBuy)
+			electricityPrice(gridFeed_In[a], electPrice, electPriceSell)
 			# save data on file
 			f = open(file,'a')
-			f.write(str(a + 1)+'\t'+str(consumption[a])+'\t'+str(PVgeneration[a])+'\t'+ str(Edu[a])+'\t'+str(Ebc[a])+'\t'+str(batteryCurrentStorage[a])+'\t'+str(GridConsumption[a])+'\t'+str(Ebd[a])+'\t'+str(selfConsRate[a])+'\t'+str(degreeSs[a])+'\t'+str(gridFeed_In[a])+'\n')
+			f.write(str(a + 1)+'\t'+str(consumption[a])+'\t'+str(PVgeneration[a])+'\t'+ str(Edu[a])+'\t'+str(Ebc[a])+'\t'+str(batteryCurrentStorage[a])+'\t'+str(GridConsumption[a])+'\t'+str(Ebd[a])+'\t'+str(selfConsRate[a])+'\t'+str(degreeSs[a])+'\t'+str(gridFeed_In[a])+'\t'+str(electCostBuy[a])+'\t'+str(electPriceSell[a])+'\n')
 			f.close()
 		# function to plot data
 		plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, selfConsRate, degreeSs, gridFeed_In, batterySize)
@@ -148,6 +152,17 @@ def degreeSelfSuff(Edu, Ebd, consumption, degreeSs):
 		d = 0.0
 	degreeSs.append(d)
 
+# function to calculate the daily electricity cost (buy from grid)
+def electricityCost(GridConsumption, electCost, electCostBuy):
+	electCostBuyTemp = GridConsumption * electCost
+	electCostBuy.append(electCostBuyTemp)
+
+# function to calculate the daily electricity price (sell to grid)
+def electricityPrice(gridFeed_In, electPrice, electPriceSell):
+	electPriceSellTemp = gridFeed_In * electPrice
+	electPriceSell.append(electPriceSellTemp)
+
+
 # function to plot data
 def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, selfConsRate, degreeSs, gridFeed_In, batterySize):
 	plt.plot(consumption,'b', label="Consumption", linewidth=2)
@@ -163,7 +178,7 @@ def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridCon
 	plt.legend(loc=9, fontsize="x-small", ncol=3)
 	plt.xlabel("Time")
 	plt.ylabel("KWh")
-	title = "Grid/Battery Consumption (Battery Size: {}kW) ".format(batterySize)
+	title = "Energy Flows of PV System (Battery Size: {}kW) ".format(batterySize)
 	plt.title(title)
 	#plt.axis([0, len(cons), 0, max(PVgeneration)])
 	plt.grid(True)
