@@ -5,6 +5,7 @@ import time
 from fractions import Fraction
 import matplotlib.pyplot as plt
 from xlrd import open_workbook
+import matplotlib.ticker as plticker
 
 file = time.strftime("%Y%m%d-%H%M%S")
 
@@ -40,15 +41,12 @@ def readExcelData():
 
 # main function
 def mainCode(consumption, PVgeneration):
-	# declare battery as 0% of charge and 1.2 (kW) of storage
-	batteryCurrentStorage, batterySize, previousCharge, number = [], 1.2, 0.0, 0
+	# declare battery as 0% of charge and 1.2 (W) of storage
+	batteryCurrentStorage, batterySize, previousCharge, number = [], 1.4, 0.0, 0
 	# declare vectors
-	Consumption, PVGeneration, Edu, Ebc, Ebd, GridConsumption, selfConsRate = [], [], [], [], [], [], []
-	degreeSs, gridFeed_In, electCostBuy, electPriceSell = [], [], [], []
+	Consumption, PVGeneration, Edu, Ebc, Ebd, GridConsumption, selfConsRate = [], [], [], [], [], [], 0.0
+	degreeSs, gridFeed_In, electCostBuy, electPriceSell = 0.0, [], [], []
 	# Prepare file to save data
-	f = open(file,'a')
-	f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("BatteryCurrentStorage")+'\t'+("Grid Consumption")+'\t'+("Ebd")+'\t'+("Self-Consumption Rate")+'\t'+("Degree of Self-Sufficiency")+'\t'+("Grid Feed-In")+'\t'+("Electricity Cost/Buy[Euro]")+'\t'+("Electricity Profit/Sell[Euro]")+'\n')
-	f.close()
 	# verify length of data vector
 	if len(consumption) == len(PVgeneration):
 		# for each data in the row
@@ -60,16 +58,30 @@ def mainCode(consumption, PVgeneration):
 			gridCons(consumption[a], PVgeneration[a], batteryCurrentStorage[a], previousCharge, GridConsumption)
 			gridFeedIn(batteryCurrentStorage[a], batterySize, PVgeneration[a], consumption[a], gridFeed_In)
 			previousCharge = energyBatteryDischarge(consumption[a], PVgeneration[a], Ebd, GridConsumption[a], previousCharge, timeInterval, gridFeed_In[a], Edu[a])
-			selfConsumptionRate(Edu[a], Ebc[a], PVgeneration[a], selfConsRate)
-			degreeSelfSuff(Edu[a], Ebd[a], consumption[a], degreeSs)
+			
 			electricityCost(GridConsumption[a], electCost, electCostBuy)
 			electricityPrice(gridFeed_In[a], electPrice, electPriceSell)
-			# save data on file
-			f = open(file,'a')
-			f.write(str(a + 1)+'\t'+str(consumption[a])+'\t'+str(PVgeneration[a])+'\t'+ str(Edu[a])+'\t'+str(Ebc[a])+'\t'+str(batteryCurrentStorage[a])+'\t'+str(GridConsumption[a])+'\t'+str(Ebd[a])+'\t'+str(selfConsRate[a])+'\t'+str(degreeSs[a])+'\t'+str(gridFeed_In[a])+'\t'+str(electCostBuy[a])+'\t'+str(electPriceSell[a])+'\n')
-			f.close()
+		
+		selfConsRate = selfConsumptionRate(Edu, Ebc, PVgeneration, selfConsRate)
+		degreeSs = degreeSelfSuff(Edu, Ebd, consumption, degreeSs)
+
 		# function to plot data
-		plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, selfConsRate, degreeSs, gridFeed_In, batterySize)
+		plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize)
+
+		# save data on file
+		# writte titles
+		f = open(file,'a')
+		f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("BatteryCurrentStorage")+'\t'+("Grid Consumption")+'\t'+("Ebd")+'\t'+("Grid Feed-In")+'\t'+("Electricity Cost/Buy[Euro]")+'\t'+("Electricity Profit/Sell[Euro]")+'\t'+("Self-Consumption Rate [s]")+'\t'+("Degree of Self-Sufficiency [d]")+'\n')
+		f.close()
+		# write summations
+		f = open(file,'a')
+		f.write(str(len(consumption))+'\t'+str(sum(consumption))+'\t'+str(sum(PVgeneration))+'\t'+ str(sum(Edu))+'\t'+str(sum(Ebc))+'\t'+str(sum(batteryCurrentStorage))+'\t'+str(sum(GridConsumption))+'\t'+str(sum(Ebd))+'\t'+str(sum(gridFeed_In))+'\t'+str(sum(electCostBuy))+'\t'+str(sum(electPriceSell))+'\t'+str(selfConsRate)+'\t'+str(degreeSs)+'\n')
+		f.close()
+		# write all data content
+		for a in range(0, len(consumption)):
+			f = open(file,'a')
+			f.write(str(a + 1)+'\t'+str(consumption[a])+'\t'+str(PVgeneration[a])+'\t'+ str(Edu[a])+'\t'+str(Ebc[a])+'\t'+str(batteryCurrentStorage[a])+'\t'+str(GridConsumption[a])+'\t'+str(Ebd[a])+'\t'+str(gridFeed_In[a])+'\t'+str(electCostBuy[a])+'\t'+str(electPriceSell[a])+'\n')
+			f.close()
 	else:
 		print "The length of the data lists is not the same"
 
@@ -113,7 +125,8 @@ def gridCons(consumption, PVgeneration, batteryCurrentStorage, previousCharge, G
 # function to calculate the grid feed In
 def gridFeedIn(batteryCurrentStorage, batterySize, PVgeneration, consumption, gridFeed_In):
 	gridFeedIn = 0.0
-	if ((batteryCurrentStorage >= batterySize) & (PVgeneration > consumption)):
+	#if ((batteryCurrentStorage >= batterySize) & (PVgeneration > consumption)):
+	if ((PVgeneration - consumption) > 0):
 		gridFeedIn = (PVgeneration - consumption)
 	else:
 		gridFeedIn = 0.0
@@ -122,9 +135,9 @@ def gridFeedIn(batteryCurrentStorage, batterySize, PVgeneration, consumption, gr
 # function to calculate the Energy Discharge from the Battery (Ebd)
 def energyBatteryDischarge(consumption, PVgeneration, Ebd, GridConsumption, previousCharge, timeInterval, gridFeed_In, Edu):
 	EbdTemp = 0.0
-	# Energy Battery Discharge
-	if ((PVgeneration > 0) & (gridFeed_In == 0.0)):
-		EbdTemp = (PVgeneration - (consumption - GridConsumption))
+	# Energy Battery Discharge (revisar)
+	if ((consumption > PVgeneration) & (PVgeneration > 0)):
+		EbdTemp = (consumption - PVgeneration)
 		if EbdTemp < 0.0:
 			EbdTemp = 0.0
 	else:
@@ -139,18 +152,20 @@ def energyBatteryDischarge(consumption, PVgeneration, Ebd, GridConsumption, prev
 # function to calculate the self-Consumption Rate
 def selfConsumptionRate(Edu, Ebc, PVgeneration, selfConsRate):
 	try:
-		s = (Edu + Ebc)/ PVgeneration
+		s = (sum(Edu) + sum(Ebc))/ sum(PVgeneration)
 	except:
 		s = 0.0
-	selfConsRate.append(s)
+	selfConsRate = s
+	return selfConsRate
 
 # function to calculate degree of self-sufficiency (d)
 def degreeSelfSuff(Edu, Ebd, consumption, degreeSs):
 	try:
-		d = (Edu + Ebd) / Consumption
+		d = (sum(Edu) + sum(Ebd)) / sum(consumption)
 	except:
 		d = 0.0
-	degreeSs.append(d)
+	degreeSs = d
+	return degreeSs
 
 # function to calculate the daily electricity cost (buy from grid)
 def electricityCost(GridConsumption, electCost, electCostBuy):
@@ -164,7 +179,11 @@ def electricityPrice(gridFeed_In, electPrice, electPriceSell):
 
 
 # function to plot data
-def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, selfConsRate, degreeSs, gridFeed_In, batterySize):
+def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize):
+	labels = list(range(-1,25))
+	fig, ax = plt.subplots()
+	fig.canvas.draw()
+
 	plt.plot(consumption,'b', label="Consumption", linewidth=2)
 	plt.plot(PVgeneration,'g', label="PV Generation", linewidth=2)
 	plt.plot(Edu,'r', label="Energy directly used", linewidth=2)
@@ -172,15 +191,17 @@ def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridCon
 	plt.plot(batteryCurrentStorage,'m', label="battery Current Storage", linewidth=2)
 	plt.plot(GridConsumption,'y', label="Grid Supply", linewidth=2)
 	plt.plot(Ebd,'k', label="Energy Battery Discharge", linewidth=2)
-	#plt.plot(selfConsRate, 'g', label="Self-Consumption Rate", linewidth=2)
-	#plt.plot(degreeSs, 'b', label="Degree of Self-Sufficiency", linewidth=2)
 	plt.plot(gridFeed_In, 'c', label="Grid Feed-In", linewidth=2)
 	plt.legend(loc=9, fontsize="x-small", ncol=3)
 	plt.xlabel("Time")
 	plt.ylabel("KWh")
 	title = "Energy Flows of PV System (Battery Size: {}kW) ".format(batterySize)
 	plt.title(title)
-	#plt.axis([0, len(cons), 0, max(PVgeneration)])
+	
+	loc = plticker.MultipleLocator(base=(12))
+	ax.xaxis.set_major_locator(loc)
+	ax.set_xticklabels(labels)
+	plt.margins(0.01)
 	plt.grid(True)
 	plt.savefig(file + ".png")
 	plt.show()
