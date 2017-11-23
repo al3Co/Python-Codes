@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from xlrd import open_workbook
 import matplotlib.ticker as plticker
 
-file = time.strftime("%Y%m%d-%H%M%S")
+date = time.strftime("%Y%m%d-%H%M%S")
 
 # declare time interval conversion factor from kW to kWh of 0.0833 (5 min interval) 
 timeInterval = Fraction(5, 60)
@@ -40,12 +40,13 @@ def readExcelData():
     return consumption, PVgeneration
 
 # main function
-def mainCode(consumption, PVgeneration):
+def mainCode(consumption, PVgeneration, BatterySizeMain):
 	# declare battery as 0% of charge and 1.2 (W) of storage
-	batteryCurrentStorage, batterySize, previousCharge, number = [], 1.4, 0.0, 0
+	batteryCurrentStorage, batterySize, previousCharge, number = [], BatterySizeMain, 0.0, 0
 	# declare vectors
 	Consumption, PVGeneration, Edu, Ebc, Ebd, GridConsumption, selfConsRate = [], [], [], [], [], [], 0.0
 	degreeSs, gridFeed_In, electCostBuy, electPriceSell = 0.0, [], [], []
+	global date
 	# Prepare file to save data
 	# verify length of data vector
 	if len(consumption) == len(PVgeneration):
@@ -66,10 +67,11 @@ def mainCode(consumption, PVgeneration):
 		degreeSs = degreeSelfSuff(Edu, Ebd, consumption, degreeSs)
 
 		# function to plot data
-		plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize)
+		#plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize)
 
 		# save data on file
 		# writte titles
+		file = (str(BatterySizeMain)+'.txt')
 		f = open(file,'a')
 		f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("BatteryCurrentStorage")+'\t'+("Grid Consumption")+'\t'+("Ebd")+'\t'+("Grid Feed-In")+'\t'+("Electricity Cost/Buy[Euro]")+'\t'+("Electricity Profit/Sell[Euro]")+'\t'+("Self-Consumption Rate [s]")+'\t'+("Degree of Self-Sufficiency [d]")+'\n')
 		f.close()
@@ -84,6 +86,7 @@ def mainCode(consumption, PVgeneration):
 			f.close()
 	else:
 		print "The length of the data lists is not the same"
+	return degreeSs, selfConsRate
 
 # function to calculate the Energy Directly Used from PVgeneration (Edu)
 def energyDirCons(consumption, PVgeneration, Edu, timeInterval):
@@ -206,14 +209,48 @@ def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridCon
 	plt.savefig(file + ".png")
 	plt.show()
 
+def plotBatteryCapacity(DegreeOfSelfSuf, SelfConsumptionRate, BatterySizeMain):
+	print DegreeOfSelfSuf, SelfConsumptionRate
+
+	labels = list(range(0, 10))
+	fig, ax = plt.subplots()
+	fig.canvas.draw()
+
+	plt.plot(DegreeOfSelfSuf,'b', label="Degree of self-sufficiency (d)", linewidth=2)
+	plt.plot(SelfConsumptionRate,'k', label="Degree of self-consumption (s)", linewidth=2)
+	plt.legend(loc=9, fontsize="x-small", ncol=3)
+	plt.xlabel("Battery Size Capacity [kWh]")
+	plt.ylabel("")
+	title = "Energy Flows of PV System"
+	plt.title(title)
+
+	loc = plticker.MultipleLocator(base=10)
+	ax.xaxis.set_major_locator(loc)
+	ax.set_xticklabels(labels)
+	plt.axis([0, 10, 0, 1.2])
+	plt.margins(0.01)
+	plt.grid(True)
+	plt.savefig("Energy Flows of PV System.png")
+	plt.show()
+
+
 # main
 if __name__ == "__main__":
 	#try :
 		# function to read excel data
 	consumption, PVgeneration = readExcelData()
 	# main function
-	mainCode(consumption, PVgeneration)
-	print "Output files: Data:", file, " Image: ", str(file + ".png")
+	BatteryCapacityMain	= [0, 5, 10, 25, 50, 75, 100, 150, 300] # este no lo estoy usando
+	BatterySizeMain 	= [0.0, 0.07, 0.14, 0.35, 0.71, 1.07, 1.42, 2.14, 4.28]
+	DegreeOfSelfSuf, SelfConsumptionRate = [], []
+
+	for a in BatterySizeMain:
+		degreeSs, selfConsRate = mainCode(consumption, PVgeneration, a)
+		DegreeOfSelfSuf.append(degreeSs)
+		SelfConsumptionRate.append(selfConsRate)
+		print "Output files: Data:", str(str(a) + ".txt"), " Image: ", str(str(a) + ".png")
+
+	plotBatteryCapacity(DegreeOfSelfSuf, SelfConsumptionRate, BatterySizeMain)
 	#except Exception, e:
 		#print "Oops!  Something is wrong: ", e
 	
