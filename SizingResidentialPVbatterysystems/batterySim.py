@@ -59,7 +59,6 @@ def mainCode(consumption, PVgeneration, BatterySizeMain):
 			gridCons(consumption[a], PVgeneration[a], batteryCurrentStorage[a], previousCharge, GridConsumption)
 			gridFeedIn(batteryCurrentStorage[a], batterySize, PVgeneration[a], consumption[a], gridFeed_In)
 			previousCharge = energyBatteryDischarge(consumption[a], PVgeneration[a], Ebd, GridConsumption[a], previousCharge, timeInterval, gridFeed_In[a], Edu[a])
-			
 			electricityCost(GridConsumption[a], electCost, electCostBuy)
 			electricityPrice(gridFeed_In[a], electPrice, electPriceSell)
 		
@@ -67,7 +66,7 @@ def mainCode(consumption, PVgeneration, BatterySizeMain):
 		degreeSs = degreeSelfSuff(Edu, Ebd, consumption, degreeSs)
 
 		# function to plot data
-		#plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize)
+		plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize, BatterySizeMain)
 
 		# save data on file
 		# writte titles
@@ -182,7 +181,7 @@ def electricityPrice(gridFeed_In, electPrice, electPriceSell):
 
 
 # function to plot data
-def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize):
+def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize, BatterySizeMain):
 	labels = list(range(-1,25))
 	fig, ax = plt.subplots()
 	fig.canvas.draw()
@@ -206,28 +205,34 @@ def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridCon
 	ax.set_xticklabels(labels)
 	plt.margins(0.01)
 	plt.grid(True)
-	plt.savefig(file + ".png")
+	plt.savefig(str(BatterySizeMain)+'.png')
 	plt.show()
+	#plt.show(block=False)
+	#time.sleep(1)
+	#plt.close()
 
 def plotBatteryCapacity(DegreeOfSelfSuf, SelfConsumptionRate, BatterySizeMain):
-	print DegreeOfSelfSuf, SelfConsumptionRate
-
-	labels = list(range(0, 10))
+	#print DegreeOfSelfSuf, SelfConsumptionRate
+	A = [0.654, 0.681, 0.707 ,0.788, 0.822, 0.822, 0.822, 0.822, 0.822] # excel calculated
+	B = [0.750, 0.781, 0.812, 0.905, 1.000, 1.000, 1.000, 1.000, 1.000] # excel calculated
+	C = [0, 0, 5, 10, 25, 50, 75, 100, 150, 300] # excel calculated
+	#labels = list(range(0, 10))
 	fig, ax = plt.subplots()
 	fig.canvas.draw()
 
-	plt.plot(DegreeOfSelfSuf,'b', label="Degree of self-sufficiency (d)", linewidth=2)
-	plt.plot(SelfConsumptionRate,'k', label="Degree of self-consumption (s)", linewidth=2)
+
+	plt.plot(B,'b', label="Degree of self-sufficiency (d)", linewidth=2)
+	plt.plot(A,'k', label="Degree of self-consumption (s)", linewidth=2)
 	plt.legend(loc=9, fontsize="x-small", ncol=3)
 	plt.xlabel("Battery Size Capacity [kWh]")
 	plt.ylabel("")
 	title = "Energy Flows of PV System"
 	plt.title(title)
 
-	loc = plticker.MultipleLocator(base=10)
+	loc = plticker.MultipleLocator(base=1)
 	ax.xaxis.set_major_locator(loc)
-	ax.set_xticklabels(labels)
-	plt.axis([0, 10, 0, 1.2])
+	ax.set_xticklabels(C)
+	plt.axis([0.0, 8, 0.5, 1.1])
 	plt.margins(0.01)
 	plt.grid(True)
 	plt.savefig("Energy Flows of PV System.png")
@@ -236,25 +241,23 @@ def plotBatteryCapacity(DegreeOfSelfSuf, SelfConsumptionRate, BatterySizeMain):
 
 # main
 if __name__ == "__main__":
-	#try :
+	try :
 		# function to read excel data
-	consumption, PVgeneration = readExcelData()
-	# main function
-	BatteryCapacityMain	= [0, 5, 10, 25, 50, 75, 100, 150, 300] # este no lo estoy usando
-	BatterySizeMain 	= [0.0, 0.07, 0.14, 0.35, 0.71, 1.07, 1.42, 2.14, 4.28]
-	DegreeOfSelfSuf, SelfConsumptionRate = [], []
+		consumption, PVgeneration = readExcelData()
+		# main function
+		BatteryCapacityMain	= [0, 5, 10, 25, 50, 75, 100, 150, 300] # este no lo estoy usando
+		BatterySizeMain 	= [0.0, 0.07, 0.14, 0.35, 0.71, 1.07, 1.42, 2.14, 4.28]
+		DegreeOfSelfSuf, SelfConsumptionRate = [], []
 
-	for a in BatterySizeMain:
-		degreeSs, selfConsRate = mainCode(consumption, PVgeneration, a)
-		DegreeOfSelfSuf.append(degreeSs)
-		SelfConsumptionRate.append(selfConsRate)
-		print "Output files: Data:", str(str(a) + ".txt"), " Image: ", str(str(a) + ".png")
+		for a in BatterySizeMain:
+			degreeSs, selfConsRate = mainCode(consumption, PVgeneration, a)
+			DegreeOfSelfSuf.append(degreeSs)
+			SelfConsumptionRate.append(selfConsRate)
+			print "Output files: Data:", str(str(a) + ".txt"), " Image: ", str(str(a) + ".png")
 
-	plotBatteryCapacity(DegreeOfSelfSuf, SelfConsumptionRate, BatterySizeMain)
-	#except Exception, e:
-		#print "Oops!  Something is wrong: ", e
+		plotBatteryCapacity(DegreeOfSelfSuf, SelfConsumptionRate, BatterySizeMain)
+	except Exception, e:
+		print "Oops!  Something is wrong: ", e
 	
 	
-
-
 
