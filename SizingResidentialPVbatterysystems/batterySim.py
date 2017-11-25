@@ -79,7 +79,7 @@ def mainCode(consumption, PVgeneration, BatterySizeMain, folder):
 		plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize, BatterySizeMain, folder)
 
 		# save data on file
-		# writte titles
+		# write titles
 		file = (str(BatterySizeMain)+'kW.txt')
 		directory =os.path.join(str(folder)+"/"+file)
 		f = open(directory,'a')
