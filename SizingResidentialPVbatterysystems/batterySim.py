@@ -18,7 +18,7 @@ electPrice = 0.1114
 
 # function to read excel data
 def readExcelData():
-    a, b, dataCorrect = False, False, True
+    a, b, c, dataCorrect = False, False, False, True
     while dataCorrect:
     	try:
     		wb = open_workbook(str(str(raw_input("Write the excel spreadsheet name: ")) + ".xlsx"))

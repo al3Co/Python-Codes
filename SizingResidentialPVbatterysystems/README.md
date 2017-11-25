@@ -13,6 +13,7 @@ Python code for sizing PV battery systems.
 
 ## Features
 
+Calculate:
 - Energy Directly used (Edu)
 - Energy Used for charging the battery (Ebc)
 - Grid Consumption
@@ -24,6 +25,7 @@ Python code for sizing PV battery systems.
 - Degree of self-sufficiency (d)
 
 ## Requirements
+
 - Python 2.7+
 - Matplotlib
 - xlrd (for excel examples)
@@ -49,6 +51,12 @@ Download
 Run
 - $ cd SizingResidentialPVbatterysystems/
 - $ python batterySim.py
+
+Running
+- You need to write the name of the .xlsx file
+- The .xlsx file must contain 3 columns called: Time, Consumption (W) and PV generation
+- You need to write the price of the trading of Energy
+- This code have to be at the same folder of the .xlsx file
 
 
 ## Communication
