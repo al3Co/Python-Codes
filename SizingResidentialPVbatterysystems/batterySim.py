@@ -74,7 +74,7 @@ def mainCode(consumption, PVgeneration, BatterySizeMain, folder):
 		
 		selfConsRate = selfConsumptionRate(Edu, Ebc, PVgeneration, selfConsRate)
 		degreeSs = degreeSelfSuff(Edu, Ebd, consumption, degreeSs)
-
+		print "Battery Size:", BatterySizeMain," s: ", selfConsRate, " d", degreeSs
 		# function to plot data
 		plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, batterySize, BatterySizeMain, folder)
 
@@ -152,6 +152,7 @@ def energyBatteryDischarge(consumption, PVgeneration, Ebd, GridConsumption, prev
 	EbdTemp = 0.0
 	# Energy Battery Discharge (revisar)
 	if ((consumption > PVgeneration) & (PVgeneration > 0)):
+		# EbdTemp = batteryCurrentStorage - consumption
 		EbdTemp = (consumption - PVgeneration)
 		if EbdTemp < 0.0:
 			EbdTemp = 0.0
@@ -276,7 +277,7 @@ def create_folder():
 
 # initial information
 def inputData():
-	global electCost, electPrice, timeInterval
+	global electCost, electPrice
 	dataCorrect = True
 	while dataCorrect:
 		try:
