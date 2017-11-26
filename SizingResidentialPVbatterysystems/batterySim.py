@@ -11,8 +11,8 @@ import matplotlib.ticker as plticker
 
 date = time.strftime("%Y%m%d-%H%M%S")
 
-# declare time interval conversion factor from kW to kWh of 0.0833 (5 min interval) 
-timeInterval = 0.08333333333 # 5/60 mins
+# declare time interval and costs
+timeInterval = 0.08333333333 # 5/60 mins conversion factor from kW to kWh of 0.0833 (5 min interval) 
 electCost = 0.2670
 electPrice = 0.1114
 
@@ -26,9 +26,9 @@ def readExcelData():
 			wb = open_workbook(str(str(raw_input("Write the excel spreadsheet name: ")) + ".xlsx"))
 			dataCorrect = False
 		except (ValueError, NameError, IOError):
-			exit = raw_input('Oops! File name not found. Press Enter to try again or [e] to exit: ')
+			exit = raw_input('Oops! File name not found. Press Enter to try again or [e] and then Enter to exit: ')
 			if exit == "e":
-				print ("Verify that the .xlsx file is in the same folder as this code. Write the file name without .xlsx the extension")
+				print ("Verify that the .xlsx file is in the same folder as this code. Enter the file name without .xlsx extension")
 				sys.exit(0)
 	for s in wb.sheets():
 		for col in range(s.ncols):
@@ -53,61 +53,59 @@ def readExcelData():
 					interval.append((value))
 				if (value == "Time" or value == "time"):
 					c = True
-			a, b = False, False
-	timeInterval = float((interval[1] - interval[0])/(0.041666667)) # factor to convert min/60
-	print "Time interval: {} minutes".format((math.ceil(timeInterval * 60)))
-	consumption = [i * timeInterval for i in consumption]
-	PVgeneration = [i * timeInterval for i in PVgeneration]
-	return consumption, PVgeneration
+			a, b, c = False, False, False
+	# verify length of data vector
+	if ((len(consumption) == len(PVgeneration)) and (len(PVgeneration) == len(interval))):
+		timeInterval = float((interval[1] - interval[0])/(0.041666667)) # factor to convert min/24hrs to min/1hr
+		print ("Time interval: {} minutes".format((math.ceil(timeInterval * 60))))
+		consumption = [i * timeInterval for i in consumption] # convert all data to kWh
+		PVgeneration = [i * timeInterval for i in PVgeneration] # convert all data to kWh
+		return consumption, PVgeneration
+	else:
+		print ("The length of the data lists is not the same, review the .xlsx file data")
+		sys.exit(0)
+
 
 # main function
-def mainCode(consumption, PVgeneration, BatterySizeMain, folder):
-	# declare battery as 0% of charge and 1.2 (W) of storage
+def mainCode(consumption, PVgeneration, BatterySizeMain, folder, flagPlot):
+	global date
+	# declare battery as 0% of charge (previousCharge)
 	batteryCurrentStorage, previousCharge, number = [], 0.0, 0
-	# declare vectors
+	# declare varaibles
 	Consumption, PVGeneration, Edu, Ebc, Ebd, GridConsumption, selfConsRate = [], [], [], [], [], [], 0.0
 	degreeSs, gridFeed_In, electCostBuy, electPriceSell = 0.0, [], [], []
-	global date
-	# Prepare file to save data
-	# verify length of data vector
-	if len(consumption) == len(PVgeneration):
-		# for each data in the row
-		for a in range(0, len(consumption)):
-			# Functions to calculate the energy behavior depending on the size of the storage battery
-			energyDirCons(consumption[a], PVgeneration[a], Edu)
-			energyChargingBattery(consumption[a], PVgeneration[a], Ebc)
-			batteryCurrentS(consumption[a], PVgeneration[a], previousCharge, BatterySizeMain, batteryCurrentStorage)
-			gridCons(consumption[a], PVgeneration[a], batteryCurrentStorage[a], previousCharge, GridConsumption)
-			gridFeedIn(batteryCurrentStorage[a], BatterySizeMain, PVgeneration[a], consumption[a], gridFeed_In)
-			previousCharge = energyBatteryDischarge(consumption[a], PVgeneration[a], Ebd, GridConsumption[a], previousCharge, gridFeed_In[a], Edu[a], BatterySizeMain)
-			electricityCost(GridConsumption[a], electCost, electCostBuy)
-			electricityPrice(gridFeed_In[a], electPrice, electPriceSell)
-		
-		selfConsRate = selfConsumptionRate(Edu, Ebc, PVgeneration, selfConsRate)
-		degreeSs = degreeSelfSuff(Edu, Ebd, consumption, degreeSs)
-		print "Battery Size:", BatterySizeMain," s: ", selfConsRate, " d", degreeSs
-		# function to plot data
-		plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, BatterySizeMain, folder)
-
-		# save data on file
-		# write titles
-		file = (str(BatterySizeMain)+'kW.txt')
-		directory =os.path.join(str(folder)+"/"+file)
+	# for each data in the row
+	for a in range(0, len(consumption)):
+		# functions to calculate the energy behavior depending on the size of the storage battery
+		energyDirCons(consumption[a], PVgeneration[a], Edu)
+		energyChargingBattery(consumption[a], PVgeneration[a], Ebc)
+		batteryCurrentS(consumption[a], PVgeneration[a], previousCharge, BatterySizeMain, batteryCurrentStorage)
+		gridCons(consumption[a], PVgeneration[a], batteryCurrentStorage[a], previousCharge, GridConsumption)
+		gridFeedIn(batteryCurrentStorage[a], BatterySizeMain, PVgeneration[a], consumption[a], gridFeed_In)
+		previousCharge = energyBatteryDischarge(consumption[a], PVgeneration[a], Ebd, GridConsumption[a], previousCharge, gridFeed_In[a], Edu[a], BatterySizeMain)
+		electricityCost(GridConsumption[a], electCost, electCostBuy)
+		electricityPrice(gridFeed_In[a], electPrice, electPriceSell)
+	selfConsRate = selfConsumptionRate(Edu, Ebc, PVgeneration, selfConsRate)
+	degreeSs = degreeSelfSuff(Edu, Ebd, consumption, degreeSs)
+	print "Battery Size:", BatterySizeMain," s: ", selfConsRate, " d", degreeSs
+	# function to plot data
+	if flagPlot:plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, BatterySizeMain, folder)
+	# prepare file to save data
+	# write titles
+	file = (str(BatterySizeMain)+'kW.txt')
+	directory =os.path.join(str(folder)+"/"+file)
+	f = open(directory,'a')
+	f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("BatteryCurrentStorage")+'\t'+("Grid Consumption")+'\t'+("Ebd")+'\t'+("Grid Feed-In")+'\t'+("Electricity Cost/Buy[Euro]")+'\t'+("Electricity Profit/Sell[Euro]")+'\t'+("Self-Consumption Rate [s]")+'\t'+("Degree of Self-Sufficiency [d]")+'\n')
+	f.close()
+	# write summations
+	f = open(directory,'a')
+	f.write(str(len(consumption))+'\t'+str(sum(consumption))+'\t'+str(sum(PVgeneration))+'\t'+ str(sum(Edu))+'\t'+str(sum(Ebc))+'\t'+str(sum(batteryCurrentStorage))+'\t'+str(sum(GridConsumption))+'\t'+str(sum(Ebd))+'\t'+str(sum(gridFeed_In))+'\t'+str(sum(electCostBuy))+'\t'+str(sum(electPriceSell))+'\t'+str(selfConsRate)+'\t'+str(degreeSs)+'\n')
+	f.close()
+	# write all data content
+	for a in range(0, len(consumption)):
 		f = open(directory,'a')
-		f.write(("Number")+'\t'+("Consumption (W)")+'\t'+("PV generation")+'\t'+ ("Edu")+'\t'+("Ebc")+'\t'+("BatteryCurrentStorage")+'\t'+("Grid Consumption")+'\t'+("Ebd")+'\t'+("Grid Feed-In")+'\t'+("Electricity Cost/Buy[Euro]")+'\t'+("Electricity Profit/Sell[Euro]")+'\t'+("Self-Consumption Rate [s]")+'\t'+("Degree of Self-Sufficiency [d]")+'\n')
+		f.write(str(a + 1)+'\t'+str(consumption[a])+'\t'+str(PVgeneration[a])+'\t'+ str(Edu[a])+'\t'+str(Ebc[a])+'\t'+str(batteryCurrentStorage[a])+'\t'+str(GridConsumption[a])+'\t'+str(Ebd[a])+'\t'+str(gridFeed_In[a])+'\t'+str(electCostBuy[a])+'\t'+str(electPriceSell[a])+'\n')
 		f.close()
-		# write summations
-		f = open(directory,'a')
-		f.write(str(len(consumption))+'\t'+str(sum(consumption))+'\t'+str(sum(PVgeneration))+'\t'+ str(sum(Edu))+'\t'+str(sum(Ebc))+'\t'+str(sum(batteryCurrentStorage))+'\t'+str(sum(GridConsumption))+'\t'+str(sum(Ebd))+'\t'+str(sum(gridFeed_In))+'\t'+str(sum(electCostBuy))+'\t'+str(sum(electPriceSell))+'\t'+str(selfConsRate)+'\t'+str(degreeSs)+'\n')
-		f.close()
-		# write all data content
-		for a in range(0, len(consumption)):
-			f = open(directory,'a')
-			f.write(str(a + 1)+'\t'+str(consumption[a])+'\t'+str(PVgeneration[a])+'\t'+ str(Edu[a])+'\t'+str(Ebc[a])+'\t'+str(batteryCurrentStorage[a])+'\t'+str(GridConsumption[a])+'\t'+str(Ebd[a])+'\t'+str(gridFeed_In[a])+'\t'+str(electCostBuy[a])+'\t'+str(electPriceSell[a])+'\n')
-			f.close()
-	else:
-		print "The length of the data lists is not the same, review the .xlsx file"
-		sys.exit(0)
 	return degreeSs, selfConsRate
 
 # function to calculate the Energy Directly Used from PVgeneration (Edu)
@@ -175,7 +173,7 @@ def energyBatteryDischarge(consumption, PVgeneration, Ebd, GridConsumption, prev
 	else:
 		EbdTemp = 0.0
 	Ebd.append(EbdTemp)
-	# Previous charge (keep at the end of this function) (Ok)
+	# previous charge (keep this part at the end of this function)
 	previousCharge = PVgeneration - consumption
 	if previousCharge < 0.0:
 		previousCharge = 0.0
@@ -201,13 +199,11 @@ def degreeSelfSuff(Edu, Ebd, consumption, degreeSs):
 
 # function to calculate the daily electricity cost (buy from grid)
 def electricityCost(GridConsumption, electCost, electCostBuy):
-	electCostBuyTemp = GridConsumption * electCost
-	electCostBuy.append(electCostBuyTemp)
+	electCostBuy.append(GridConsumption * electCost)
 
 # function to calculate the daily electricity price (sell to grid)
 def electricityPrice(gridFeed_In, electPrice, electPriceSell):
-	electPriceSellTemp = gridFeed_In * electPrice
-	electPriceSell.append(electPriceSellTemp)
+	electPriceSell.append(gridFeed_In * electPrice)
 
 # function to plot data
 def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridConsumption, Ebd, gridFeed_In, BatterySizeMain, folder):
@@ -244,18 +240,14 @@ def plotData(consumption, PVgeneration, Edu, Ebc, batteryCurrentStorage, GridCon
 
 # function to plot final data
 def plotBatteryCapacity(DegreeOfSelfSuf, SelfConsumptionRate, BatterySizeMain, folder):
-	#print DegreeOfSelfSuf, SelfConsumptionRate
-	#A = [0.654, 0.681, 0.707 ,0.788, 0.822, 0.822, 0.822, 0.822, 0.822] # excel calculated
-	#B = [0.750, 0.781, 0.812, 0.905, 1.000, 1.000, 1.000, 1.000, 1.000] # excel calculated
+	#A = [0.654, 0.681, 0.707 ,0.788, 0.822, 0.822, 0.822, 0.822, 0.822] # sample excel calculated
+	#B = [0.750, 0.781, 0.812, 0.905, 1.000, 1.000, 1.000, 1.000, 1.000] # sample excel calculated 
 	xLabel = [0, 0, 5, 10, 25, 50, 75, 100, 150, 300] # X label scale
 	fig, ax = plt.subplots()
 	fig.canvas.draw()
 
 	plt.plot(DegreeOfSelfSuf,'b', label="Degree of self-sufficiency (d)", linewidth=2)
 	plt.plot(SelfConsumptionRate,'k', label="Degree of self-consumption (s)", linewidth=2)
-
-	#plt.plot(B,'b', label="Degree of self-sufficiency (d)", linewidth=2)
-	#plt.plot(A,'k', label="Degree of self-consumption (s)", linewidth=2)
 
 	plt.legend(loc=9, fontsize="x-small", ncol=3)
 	plt.xlabel("Battery Size Capacity [kWh]")
@@ -286,46 +278,48 @@ def create_folder():
 		# if folder name not exist, save new folder
 		if not os.path.exists(fld_name):
 			os.makedirs(fld_name)
-			print "New folder created: " + fld_name
+			print ("New folder created: " + fld_name)
 	except OSError as e:
-		print e
+		print (e)
 	return fld_name
 
 # initial information
 def inputData():
 	global electCost, electPrice
-	dataCorrect = True
+	dataCorrect, flagPlot = True, False
 	while dataCorrect:
 		try:
 			electCost = float(raw_input("Write the electricity Cost [0.2670] Euro: "))
 			electPrice = float(raw_input("Write the electricity Price [0.1114] Euro: "))
+			plot = str(raw_input("To direct process press [Enter]. To see each graph press [g]?: "))
+			if plot == "g": flagPlot = True
 			dataCorrect = False
+			return flagPlot
 		except (ValueError, NameError):
-			exit = raw_input('Oops! That was no valid number. Press Enter to try again or [e] to exit: ')
+			exit = raw_input('Oops! That was no valid character. Press Enter to try again or [e] and then Enter to exit: ')
 			if exit == "e":
-				print ("Bye")
+				print ("Exit")
 				sys.exit(0)
 
 # main
 if __name__ == "__main__":
+	# declare list of batteries size
 	BatterySizeMain = [0.0, 0.07, 0.14, 0.35, 0.71, 1.07, 1.42, 2.14, 4.28]
 	DegreeOfSelfSuf, SelfConsumptionRate = [], []
 	try :
 		# function to read excel data
 		consumption, PVgeneration = readExcelData()
-		inputData()
+		# function to ask for data
+		flagPlot = inputData()
 		# function to create folder
 		new_folder = create_folder()
 		# main function
 		for a in BatterySizeMain:
-			degreeSs, selfConsRate = mainCode(consumption, PVgeneration, a, new_folder)
+			degreeSs, selfConsRate = mainCode(consumption, PVgeneration, a, new_folder, flagPlot)
 			DegreeOfSelfSuf.append(degreeSs)
 			SelfConsumptionRate.append(selfConsRate)
 			print "Output files: Data:", str(str(a) + "kW.txt"), " Image: ", str(str(a) + "kW.png")
 
 		plotBatteryCapacity(DegreeOfSelfSuf, SelfConsumptionRate, BatterySizeMain, new_folder)
 	except Exception, e:
-		print "Oops!  Something is wrong: ", e
-	
-	
-
+		print ("Oops!  Something is wrong: ", e)
